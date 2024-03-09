@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  qtpy_dev_env:
+    build: 
+      context: .
+      dockerfile: ./.devcontainer/Dockerfile
+    volumes:
+      - ./:/app:cached     
+
+    
