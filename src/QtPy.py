@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
     QStackedWidget, QFrame, QWidget, 
     QHBoxLayout, QVBoxLayout, QGridLayout, 
     QLayout, QPushButton, QLabel, QMainWindow,
-    QApplication, QComboBox
+    QApplication, QComboBox, QListWidget, QListWidgetItem
 )
 from typing import Optional, Literal, Dict, List, Tuple
 import traceback
@@ -365,23 +365,6 @@ class myLabel(QLabel, myBaseWidget):
         self.rotation_angle = angle
         self.update()
 
-    def paintEvent(self, event) -> None:
-        """Rotates the displayed self.image QPixmap.
-        """
-        super().paintEvent(event)
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
-
-        # Translate the painter to the center of the label
-        painter.translate(self.width() / 2, self.height() / 2)
-        # Rotate the painter
-        painter.rotate(self.rotation_angle)
-        # Draw the rotated image
-        painter.drawPixmap(-self.image.width() / 2, -self.image.height() / 2, self.image)
-        
-        new_size = self.image.size().scaled(self.image.size(), Qt.KeepAspectRatio)
-        self.setFixedSize(new_size)
-
     def add_image(self, path_to_image: str) -> None:
         """Assigns a QPixmap with the image in the path to the self.image variable.
 
@@ -476,3 +459,10 @@ class myRotateableFrame(QFrame, myBaseWidget):
     def setRotation(self, angle):
         self.rotation_angle = angle
         self.update()
+        
+        
+        
+        
+        
+        
+        
