@@ -2,9 +2,9 @@ from __future__ import annotations
 from typing import Literal, Dict, Union, Optional
 from QtPy import myFrame, myWindow, myDropdownMenu, myStack, myButton, myLabel
 from PyQt5.QtWidgets import QSizePolicy, QListWidget, QListWidgetItem, QLabel, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, QLineEdit, QMessageBox
-from PyQt5.QtGui import QKeyEvent, QPainter, QColor, QResizeEvent, QTransform
-from PyQt5.QtCore import QRectF, Qt
-from paintable_objects import Plane, Target_box, Indicator_Target_Box, Indicator_Arrows
+from PyQt5.QtGui import QKeyEvent, QPaintEvent, QPainter, QColor, QResizeEvent, QTransform
+from PyQt5.QtCore import QRectF, Qt, QPoint
+from paintable_objects import Plane, Target_box, Indicator_Target_Box, Indicator_Arrows, game_text
 from database import DatabaseHandler
 
 
@@ -34,7 +34,8 @@ class Frontend(myWindow):
            
         # Create the top menu
         self.top_menu = menu_bar(
-            parent = self.central_widget
+            parent = self.central_widget,
+            backend = backend
         )
         
         # Create the main frame where we can select what page is
@@ -147,7 +148,7 @@ class menu_bar(myFrame):
     
     ports_menu: myDropdownMenu
     
-    def __init__(self, parent: myFrame) -> None:
+    def __init__(self, parent: myFrame, backend) -> None:
         
         super().__init__(
             parent = parent,
@@ -157,13 +158,25 @@ class menu_bar(myFrame):
         )
         self.setContentsMargins(0, 0, 0, 0) 
         self.setMaximumHeight(30)
+        self.backend = backend
     
         self.ports_menu = myDropdownMenu(
             parent = self,
             object_name = "ports_menu",
             add_to_parent_layout = True
         )
-        self.ports_menu.addItem("Test...")
+        
+        self.ports_menu.addItem("No sensors connected...")
+        ports = self.backend.serial_reader.fetchPorts()
+        if len(ports) != 0:
+            self.ports_menu.addItems(ports)
+
+        self.ports_menu.currentTextChanged.connect(self.item_clicked)
+        
+    def item_clicked(self, index):
+        
+        if self.ports_menu.currentText() != "No sensors connected...":
+            self.backend.serial_reader.newPort(self.ports_menu.currentText()[:4])
   
 class page_1(myFrame):
     
@@ -256,6 +269,32 @@ class page_2(myFrame):
         
         # Add stretch between right indicator and right edge
         self.layout().addStretch()
+        
+        self.left_force = game_text(self)
+        self.left_force.set_width("1234\tg")
+        self.left_force.display_text = "----\tg"
+    
+        self.right_force = game_text(self)
+        self.right_force.set_width("1234\tg")
+        self.right_force.display_text = "----\tg"
+    
+    def paintEvent(self, event: QPaintEvent) -> None:
+        super().paintEvent(event)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        left_ind_pos = self.left_indicator.mapTo(self, QPoint(0, 0))
+        right_ind_pos = self.right_indicator.mapTo(self, QPoint(0,0))
+
+        left_ind = left_ind_pos + QPoint(140, 80)
+        right_ind = right_ind_pos + QPoint(-140 + self.left_indicator.width(), 80)
+        
+        self.left_force.font.setPixelSize(20)
+        self.right_force.font.setPixelSize(20)
+        
+        self.left_force.draw(painter, left_ind)
+        self.right_force.draw(painter, right_ind)
+
 
 class indicator_frame(myFrame):
     """The indicator bars that are placed next to the plane on each side. Contains
@@ -287,7 +326,8 @@ class indicator_frame(myFrame):
                
         self.target_box = Indicator_Target_Box(self)
         self.arrows = Indicator_Arrows(self, self.target_box)
-        self.target_box.set_partner(self.arrows)                   
+        self.target_box.set_partner(self.arrows)    
+        self.text = game_text(self)               
 
         
     def get_accuracy(self) -> int:
@@ -325,7 +365,8 @@ class indicator_frame(myFrame):
         self.target_box.draw(painter)
         
         self.arrows.draw(painter)
-       
+        
+    
 class middle_frame(myFrame):
     """The frame where the plane and the plane target box is. Paints these objects and
     has functionality that animates their changes in rotation.
@@ -355,6 +396,8 @@ class middle_frame(myFrame):
         # Create the plane
         self.plane = Plane(self)
         self.plane.y_offset = 39
+        self.text = game_text(self)
+        self.text.auto_adjust(True)
 
         # Create the target box
         self.target_box = Target_box(self, self.plane)
@@ -375,6 +418,7 @@ class middle_frame(myFrame):
 
         self.target_box.draw(painter)
         self.plane.draw(painter)
+        self.text.draw(painter)
 
 class UserListWidget(QWidget):
     def __init__(self, parent: myFrame, top_level: Frontend):
@@ -453,12 +497,30 @@ class UserListWidget(QWidget):
         plot_layout.addWidget(self.plot_game_button)
         
         self.show_progress_button = QPushButton("Show progress")
-        #self.show_progress_button.clicked.connect(self.show_progress)
+        self.show_progress_button.clicked.connect(self.show_progress)
         self.show_progress_button.setEnabled(False)
         plot_layout.addWidget(self.show_progress_button)
         plot_layout.setContentsMargins(0, 10, 0, 0)
         
         game_list_frame.layout().addLayout(plot_layout)
+        
+        export_layout = QHBoxLayout()
+        
+        self.export_game_button = QPushButton("Export game")
+        self.export_game_button.clicked.connect(self.export_game)
+        self.export_game_button.setEnabled(False)
+        export_layout.addWidget(self.export_game_button)
+        
+        self.export_progress_button = QPushButton("Export progress")
+        self.export_progress_button.clicked.connect(self.export_progress)
+        self.export_progress_button.setEnabled(False)
+        export_layout.addWidget(self.export_progress_button)
+        export_layout.setContentsMargins(0, 10, 0, 0)
+        
+        game_list_frame.layout().addLayout(export_layout)
+        
+        
+        
         
         self.setLayout(master_layout)
 
@@ -513,8 +575,6 @@ class UserListWidget(QWidget):
             item = QListWidgetItem(str(user))
             item.setData(1, user)  # Set user data for later use
             self.user_list_widget.addItem(item)
-
-        
     
     def populate_games_list(self, games):
         self.games_list_widget.clear()
@@ -537,14 +597,31 @@ class UserListWidget(QWidget):
             f"Current user: {self.top_level.backend.current_user.name}"
         )
         self.top_level.page_1.start_game_button.setEnabled(True)
+        self.export_game_button.setEnabled(False)
+        self.plot_game_button.setEnabled(False)
+        
+        if len(user.games) > 1:
+            self.show_progress_button.setEnabled(True)
+            self.export_progress_button.setEnabled(True)
+        else:
+            self.show_progress_button.setEnabled(False)
+            self.export_progress_button.setEnabled(False)
         
     def handle_selection_change(self) -> None:
         if not self.user_list_widget.selectedItems():
             self.delete_user_button.setEnabled(False)
+            self.show_progress_button.setEnabled(False)
             self.games_list_widget.clear()
         else:
             self.delete_user_button.setEnabled(True)
-    
+
+    def show_progress(self) -> None:
+        
+        current_user = self.user_list_widget.currentItem()
+        if current_user is not None:
+            user = current_user.data(1)
+            self.top_level.backend.plot_progress(user)
+   
     def show_game(self):
         current_game = self.games_list_widget.currentItem()
         if current_game is not None:
@@ -554,5 +631,16 @@ class UserListWidget(QWidget):
     def handle_game_selection_change(self) -> None:
         if self.games_list_widget.currentItem() is not None:
             self.plot_game_button.setEnabled(True)
+            self.export_game_button.setEnabled(True)
         else:
             self.delete_user_button.setEnabled(False)
+            self.export_game_button.setEnabled(False)
+    
+    def export_progress(self):
+        pass
+
+    def export_game(self):
+        current_game = self.games_list_widget.currentItem()
+        if current_game is not None:
+            game = current_game.data(1)
+            self.top_level.backend.save_game_Excel(game)

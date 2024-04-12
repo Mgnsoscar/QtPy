@@ -1,15 +1,21 @@
 from __future__ import annotations
-from typing import Literal, Dict, Union, Optional
 from QtPy import myFrame
-from PyQt5.QtGui import QPixmap, QPainter, QTransform, QBrush, QColor, QVector3D, QLinearGradient
-from PyQt5.QtCore import QRectF, QPoint, QPointF, QVariantAnimation, QEasingCurve, Qt
-import math
+from PyQt5.QtGui import (
+    QPixmap, QPainter, QTransform, QBrush, 
+    QColor, QVector3D, QLinearGradient, QFont
+)
+from PyQt5.QtCore import (
+    QRectF, QPoint, QPointF, 
+    QVariantAnimation, QEasingCurve, Qt
+)
 import numpy as np
-from functools import partial
 from copy import copy
 
 
 class Paintable_object(object):
+    """
+    A class representing a paintable object with position and rotation attributes.
+    """
 
     parent: myFrame
     __relative_x_pos: float
@@ -21,6 +27,9 @@ class Paintable_object(object):
     center: QPoint
      
     def __init__(self) -> None:
+        """
+        Initialize the paintable object.
+        """
         self.__rotation_angle = 0.
         self.__relative_x_pos = 0.
         self.__relative_y_pos = 0.
@@ -29,18 +38,32 @@ class Paintable_object(object):
         self.max_rotation_angle = 180
 
     def reset_position(self):
+        """
+        Reset the position and rotation of the object.
+        """
         self.move(
-            x_pos = 0,
-            y_pos = 0,
-            rotation_angle = 0,
-            duration = 100
+            x_pos=0,
+            y_pos=0,
+            rotation_angle=0,
+            duration=1
         )
 
     def rotation_angle(self) -> float:
+        """
+        Get the rotation angle of the object.
+
+        Returns:
+            float: The rotation angle.
+        """
         return self.__rotation_angle
     
     def set_rotation_angle(self, new_rotation: float) -> None:
-        
+        """
+        Set the rotation angle of the object.
+
+        Args:
+            new_rotation (float): The new rotation angle.
+        """
         if new_rotation <= -self.max_rotation_angle:
             new_rotation = -self.max_rotation_angle
         elif new_rotation >= self.max_rotation_angle:
@@ -49,82 +72,114 @@ class Paintable_object(object):
         self.__rotation_angle = new_rotation
 
     def y_position(self) -> float:
+        """
+        Get the y-coordinate position of the object.
+
+        Returns:
+            float: The y-coordinate position.
+        """
         return self.__relative_y_pos
     
     def set_y_position(self, new_y_position: float) -> None:
-            
+        """
+        Set the y-coordinate position of the object.
+
+        Args:
+            new_y_position (float): The new y-coordinate position.
+        """
         if new_y_position <= -1. or new_y_position >= 1. :
             new_y_position /= abs(new_y_position)
               
         self.__relative_y_pos = new_y_position
 
     def x_position(self) -> float:
+        """
+        Get the x-coordinate position of the object.
+
+        Returns:
+            float: The x-coordinate position.
+        """
         return self.__relative_x_pos
         
     def set_x_position(self, new_x_position: float) -> None:
-            
+        """
+        Set the x-coordinate position of the object.
+
+        Args:
+            new_x_position (float): The new x-coordinate position.
+        """
         if new_x_position <= -1. or new_x_position >= 1. :
             new_x_position /= abs(new_x_position)
               
         self.__relative_x_pos = new_x_position
    
     def update_position_and_rotation(self, Vector: QVector3D) -> None:
+        """
+        Update the position and rotation of the object.
+
+        Args:
+            Vector (QVector3D): The vector containing new position and rotation values.
+        """
         self.set_x_position(Vector.x())
         self.set_y_position(Vector.y())
         self.set_rotation_angle(Vector.z())
-        if isinstance(self, Target_box): self.set_color(15, 50)
+        if isinstance(self, Target_box): 
+            self.set_color(15, 50)
         self.parent.update()
         
     def get_parent_center(self)-> QPoint:
-        """Return the coordinate in the center of the parent frame.
+        """
+        Return the coordinate in the center of the parent frame.
 
         Returns:
             QPoint: Parent frame's center point.
         """
-
         return QPoint(
             self.parent.width() // 2,
             self.parent.height() // 2
         )
         
     def get_painter(self, painter: QPainter) -> QPainter:
-        
+        """
+        Get the painter object with appropriate transformation applied.
+
+        Args:
+            painter (QPainter): The original QPainter object.
+
+        Returns:
+            QPainter: The transformed QPainter object.
+        """
         center_point = self.get_center()
         
         transform = QTransform()
-        
         transform.translate(
             center_point.x(),
             center_point.y()
         )
-        
-        # Rotate the grid
         transform.rotate(self.rotation_angle())
-        
-        
-        # Then move the transform back to make the object's center 
-        # appear in the transform point
         transform.translate(
-            - self.width() / 2, 
-            - self.height() / 2
+            - self.width() // 2, 
+            - self.height() // 2
         )
         
-        # Assign the transform
         painter.setTransform(transform)   
         
         return painter     
 
     def get_center(self) -> QPoint:
-        # Fetch the parent center coordinates
+        """
+        Calculate the center point of the object.
+
+        Returns:
+            QPoint: The center point of the object.
+        """
         parent_center = self.get_parent_center()
 
-        # Create new transform and move it to the center
         transform = QTransform()
         transform.translate(
             parent_center.x(),
             parent_center.y()
         )
-
         transform.translate(
             int(round(
                 self.x_position() 
@@ -141,7 +196,12 @@ class Paintable_object(object):
         return transform.map(QPoint(0,0))
 
     def get_position_in_parent_as_float(self) -> QPointF:
-        
+        """
+        Calculate the position of the object relative to its parent frame.
+
+        Returns:
+            QPointF: The position of the object as a floating-point QPointF.
+        """
         center = self.get_center()
         parent_center = self.get_parent_center()
         
@@ -179,8 +239,11 @@ class Paintable_object(object):
             self.update_position_and_rotation
         )
         self.animation_pos.start()
-    
 class Plane(QPixmap, Paintable_object):
+    """
+    A class representing a plane object.
+    Inherits from QPixmap and Paintable_object.
+    """
 
     __slots__ = (
             "parent",
@@ -193,21 +256,31 @@ class Plane(QPixmap, Paintable_object):
     )
     
     def __init__(self, parent: myFrame) -> None:
-        
+        """
+        Initialize the plane object.
+
+        Args:
+            parent (myFrame): The parent object.
+        """
         self.parent = parent
         QPixmap.__init__(self, "resources/images/fly_new.png")
         Paintable_object.__init__(self) 
            
     def draw(self, painter: QPainter) -> None:
-        
+        """
+        Draw the plane.
+
+        Args:
+            painter (QPainter): The QPainter object used for drawing.
+        """
         painter = self.get_painter(painter)
         
+        # Draw the pixmap representing the plane
         painter.drawPixmap(
             - self.x_offset, 
             - self.y_offset, 
             self
-        )
-        
+        )    
 class Target_box(Paintable_object):
     
     __slots__ = (
@@ -335,27 +408,38 @@ class Target_box(Paintable_object):
         self.__color.setRed(
             0 + int(round(255 * color_change, 0))
         )
-
 class Indicator_Target_Box(Paintable_object):
-    
+    """
+    A class representing an indicator target box.
+    Inherits from Paintable_object.
+    """
+
     def __init__(self, parent: myFrame) -> None:
-        
+        """
+        Initialize the indicator target box.
+
+        Args:
+            parent (myFrame): The parent object.
+        """
         Paintable_object.__init__(self)
         
         # Assign parent frame
         self.parent = parent
                 
-        # Init color
-        self.color = QColor( # Base color of indicator bar is green
-            0, 255, 0, 200
-        )
+        # Initialize color
+        self.color = QColor(0, 255, 0, 200)  # Base color of indicator bar is green
 
         # Set max difference between target box center and 
         # indicator arrows before the color is all red
-        self.max_difference = self.height()//2
+        self.max_difference = self.height() // 2
     
     def get_color(self) -> QColor:
-        
+        """
+        Get the color of the indicator target box based on the difference between its center and partner's center.
+
+        Returns:
+            QColor: The color of the indicator target box.
+        """
         color = QColor(0, 255, 0, 200)
         
         difference = abs(
@@ -363,64 +447,72 @@ class Indicator_Target_Box(Paintable_object):
             - self.partner.get_center().y()
         )
         
-        color_change = difference/self.max_difference
-        if color_change > 1: color_change = 1
+        color_change = difference / self.max_difference
+        if color_change > 1:
+            color_change = 1
         
-        color.setGreen(
-            255 - int(round(255 * color_change, 0 ))
-        )
-        color.setRed(
-            0 + int(round(255 * color_change, 0))
-        )
+        color.setGreen(255 - int(round(255 * color_change, 0)))
+        color.setRed(0 + int(round(255 * color_change, 0)))
         
         return color
     
-    def height(self) -> int: return (0.8 * self.parent.height()) // 4
+    def height(self) -> int:
+        """
+        Get the height of the indicator target box.
+
+        Returns:
+            int: The height of the indicator target box.
+        """
+        return (0.8 * self.parent.height()) // 4
     
-    def width(self) -> int: return int(round(0.6 * self.parent.width(), 0))
+    def width(self) -> int:
+        """
+        Get the width of the indicator target box.
+
+        Returns:
+            int: The width of the indicator target box.
+        """
+        return int(round(0.6 * self.parent.width(), 0))
     
     def get_center(self) -> QPoint:
-        # Fetch the parent center coordinates
+        """
+        Get the center point of the indicator target box.
+
+        Returns:
+            QPoint: The center point of the indicator target box.
+        """
         parent_center = self.get_parent_center()
 
-        # Create new transform and move it to the center
         transform = QTransform()
-        transform.translate(
-            parent_center.x(),
-            parent_center.y()
-        )
+        transform.translate(parent_center.x(), parent_center.y())
 
         transform.translate(
             int(round(
-                self.x_position() 
-                * (parent_center.x() - self.width() / 2),
+                self.x_position() * (parent_center.x() - self.width() / 2),
                 0
             )),
             int(round(
-                - self.y_position() 
-                * (parent_center.y() - self.height() / 2),
+                - self.y_position() * (parent_center.y() - self.height() / 2),
                 0
             ))
         )
         
-        return transform.map(QPoint(0,0))
+        return transform.map(QPoint(0, 0))
     
     def draw(self, painter: QPainter) -> None:
-        
+        """
+        Draw the indicator target box.
+
+        Args:
+            painter (QPainter): The QPainter object used for drawing.
+        """
         painter = self.get_painter(painter)
         
-        # Create a gradient
-        gradient = QLinearGradient(
-            0, 
-            0, 
-            0, 
-            self.height()
-        )
-        
+        # Create a gradient for the target box
+        gradient = QLinearGradient(0, 0, 0, self.height())
         color = self.get_color()
         
-        # Copy the QColor object from self.indicator_color and
-        # change alpha values to use in the gradient
+        # Copy the QColor object from self.color and change alpha values for the gradient
         center_color = copy(color)
         center_color.setAlpha(255)
         
@@ -431,137 +523,237 @@ class Indicator_Target_Box(Paintable_object):
         gradient.setColorAt(0.5, center_color)
         gradient.setColorAt(1, edge_color)
         
-        # Create the target box and set color to the gradient
+        # Set the brush with the gradient
         painter.setBrush(gradient) 
         painter.setPen(Qt.transparent)
-        rect = QRectF( 
-            0, 
-            0, 
-            self.width(), 
-            self.height()
-        )
-        painter.drawRect(rect) # Draw the target box
+        rect = QRectF(0, 0, self.width(), self.height())
+        painter.drawRect(rect)  # Draw the target box
         
         # Draw a black line through the center of the target box
         painter.setPen(Qt.black) 
-        painter.drawLine( 
-            0, 
-            self.height()//2, 
-            self.width() , 
-            self.height()//2
+        painter.drawLine(
+            0, self.height() // 2,
+            self.width(), self.height() // 2
         )
 
     def set_partner(self, partner):
-        self.partner = partner
+        """
+        Set the partner object.
 
+        Args:
+            partner: The partner object.
+        """
+        self.partner = partner
 class Indicator_Arrows(Indicator_Target_Box):
-    
+    """
+    A class representing indicator arrows.
+    Inherits from Indicator_Target_Box.
+    """
+
     def __init__(self, parent: myFrame, partner: Indicator_Target_Box) -> None:
-        
+        """
+        Initialize the indicator arrows.
+
+        Args:
+            parent (myFrame): The parent object.
+            partner (Indicator_Target_Box): The partner object.
+        """
         Indicator_Target_Box.__init__(self, parent)
         self.set_partner(partner)
     
     def get_center(self) -> QPoint:
-        # Fetch the parent center coordinates
+        """
+        Get the center point of the indicator arrows.
+
+        Returns:
+            QPoint: The center point of the indicator arrows.
+        """
         parent_center = self.get_parent_center()
 
-        # Create new transform and move it to the center
         transform = QTransform()
-        transform.translate(
-            parent_center.x(),
-            parent_center.y()
-        )
+        transform.translate(parent_center.x(), parent_center.y())
 
         transform.translate(
             int(round(
-                self.x_position() 
-                * (parent_center.x() - self.width() / 2),
+                self.x_position() * (parent_center.x() - self.width() / 2),
                 0
             )),
             int(round(
-                - self.y_position() 
-                * (parent_center.y() - self.height()  / 2),
+                - self.y_position() * (parent_center.y() - self.height() / 2),
                 0
             ))
         )
-        return transform.map(QPoint(0,0))
+        return transform.map(QPoint(0, 0))
   
     def draw(self, painter: QPainter) -> None:
-        
+        """
+        Draw the indicator arrows.
+
+        Args:
+            painter (QPainter): The QPainter object used for drawing.
+        """
         # Find center of parent and translate to that point
         center = self.get_center()
         
         transform = QTransform()
-        transform.translate(
-            center.x(),
-            center.y()
-        )
+        transform.translate(center.x(), center.y())
         painter.setTransform(transform)
         
-        # Calculate side length of the
-        side_length = int(round((self.parent.width()*0.4)//2, 0))
+        # Calculate side length of the arrows
+        side_length = int(round((self.parent.width() * 0.4) // 2, 0))
         
-        # set the brush color
-        painter.setBrush(
-            self.get_color()
-        )
+        # Set the brush color
+        painter.setBrush(self.get_color())
         
-        transform.translate(
-            - (self.parent.width()*0.6)//2,
-            0
-        )
-        
+        # Draw the left arrow
+        transform.translate(- (self.parent.width() * 0.6) // 2, 0)
         painter.setTransform(transform)
         painter.drawPolygon(
             QPoint(0, 0),
-            QPoint(
-                -side_length, 
-                -side_length),
+            QPoint(-side_length, -side_length),
             QPoint(-side_length, side_length)
         )
         
-        transform.translate(
-            (self.parent.width()*0.6)//1,
-            0
-        )
+        # Draw the right arrow
+        transform.translate((self.parent.width() * 0.6) // 1, 0)
         painter.setTransform(transform)
         painter.drawPolygon(
             QPoint(0, 0),
-            QPoint(
-                side_length, 
-                side_length),
+            QPoint(side_length, side_length),
             QPoint(side_length, -side_length)
         )
         
+        # Draw additional arrows if the difference between centers is small
         if abs(center.y() - self.partner.get_center().y()) < 8:
-            
             side_length = side_length // 2
             
-            transform.translate(
-                side_length,
-                0
-            )
+            # Draw upper left arrow
+            transform.translate(side_length, 0)
             painter.setTransform(transform)
             painter.drawPolygon(
                 QPoint(0, 0),
-                QPoint(
-                    side_length, 
-                    side_length),
+                QPoint(side_length, side_length),
                 QPoint(side_length, -side_length)
             )
             
+            # Draw upper right arrow
             transform.translate(
-                -side_length
-                -(self.parent.width()*0.6)//1
-                - side_length,
+                -side_length - (self.parent.width() * 0.6) // 1 - side_length,
                 0
             )
             painter.setTransform(transform)
             painter.drawPolygon(
                 QPoint(0, 0),
-                QPoint(
-                    -side_length, 
-                    side_length),
+                QPoint(-side_length, side_length),
                 QPoint(-side_length, -side_length)
             )
-            
+class game_text(Paintable_object):
+    """
+    A class representing game text.
+    Inherits from Paintable_object.
+    """
+    
+    def __init__(self, parent) -> None:
+        """
+        Initialize the game text.
+
+        Args:
+            parent: The parent object.
+        """
+        Paintable_object.__init__(self)
+        self.parent = parent
+        self.display_text = "Game starting in 10"
+        self.font = QFont("Arial", 20, QFont.Bold)
+        self.auto_width = False
+        self.phrase = None
+    
+    def set_width(self, text: str) -> None:
+        
+        self.phrase = text
+    
+    def auto_adjust(self, input_bool: bool) -> None:
+        
+        self.auto_width = input_bool
+
+    
+    def width(self):
+        """
+        Get the width of the game text.
+
+        Returns:
+            int: The width of the game text.
+        """
+        return 10
+    
+    def height(self):
+        """
+        Get the height of the game text.
+
+        Returns:
+            int: The height of the game text.
+        """
+        return 10
+    
+    def set_text(self, text): 
+        """
+        Set the display text.
+
+        Args:
+            text (str): The text to display.
+        """
+        self.display_text = text
+        self.parent.update()
+    
+    def draw(self, painter, coordinate=None):
+        """
+        Draw the game text.
+
+        Args:
+            painter (QPainter): The QPainter object used for drawing.
+            coordinate (QPoint, optional): The coordinate to draw the text. Defaults to None.
+        """
+        if coordinate is None:
+            painter = self.get_painter(painter)
+        else: 
+            transform = QTransform()
+            transform.translate(coordinate.x(), coordinate.y())
+            painter.setTransform(transform)
+        
+        transform = painter.transform()
+        transform.translate(
+            self.width()//2,
+            self.height()//2
+        )
+        painter.setTransform(transform)
+        
+        painter.setFont(self.font)
+
+        # Set color to white
+        painter.setPen(QColor(Qt.transparent))
+
+        if self.auto_width:
+            text_width = painter.fontMetrics().width(self.display_text)
+        else:
+            text_width = painter.fontMetrics().width(self.phrase)
+        
+        text_height = painter.fontMetrics().height()
+        rect_width = round(text_width* 1.3)
+        rect_height = round(text_height * 1.3)
+        
+        transform = painter.transform()
+        transform.translate(
+            -rect_width//2,
+            -rect_height//2
+        )
+        
+        painter.setTransform(transform)
+        painter.setBrush(QColor(0, 0, 0, 50))
+        painter.drawRoundedRect(0, 0, rect_width, rect_height, 10, 10)
+
+        painter.setPen(Qt.white)
+        # Draw text at the center
+        painter.drawText(
+            (rect_width - text_width) // 2,  
+            rect_height - (rect_height - text_height) - 2, 
+            self.display_text
+        )   

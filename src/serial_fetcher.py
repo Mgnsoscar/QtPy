@@ -57,8 +57,6 @@ class SerialDevice(serial.Serial):
         # Store the incomplete line back to the buffer
         buffer = lines[-1]
                         
-        
-        
     def newBaudrate(self, newBaudrate: int) -> None:
         """
         Defines a new baudrate

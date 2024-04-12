@@ -40,6 +40,10 @@ class GameModel(Base):
     right_force = Column(String)  # Stored as JSON string in SQLite
     left_force_target = Column(String)  # Stored as JSON string in SQLite
     right_force_target = Column(String)  # Stored as JSON string in SQLite
+    left_error = Column(Float)
+    right_error = Column(Float)
+    left_instability = Column(Float)
+    right_instability = Column(Float)
     
     # Relationship with UserModel
     user_id = Column(Integer, ForeignKey('users.id'))
@@ -51,6 +55,10 @@ class GameModel(Base):
         right_force: np.ndarray,
         left_force_target: np.ndarray, 
         right_force_target: np.ndarray,
+        left_error: float,
+        right_error: float,
+        left_instability: float,
+        right_instability: float,
         user_id: int
     ):
 
@@ -60,6 +68,10 @@ class GameModel(Base):
         self.right_force = json.dumps(right_force.tolist())
         self.left_force_target = json.dumps(left_force_target.tolist())
         self.right_force_target = json.dumps(right_force_target.tolist())
+        self.left_error = left_error
+        self.right_error = right_error
+        self.left_instability = left_instability
+        self.right_instability = right_instability
         self.user_id = user_id
     
     def __repr__(self) -> str:
@@ -82,6 +94,10 @@ class Game(BaseModel):
     right_force: np.ndarray
     left_force_target: np.ndarray
     right_force_target: np.ndarray
+    left_error: float
+    right_error: float
+    left_instability: float
+    right_instability: float
 
     class Config:
         from_attributes = True
