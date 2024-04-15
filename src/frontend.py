@@ -66,49 +66,6 @@ class Frontend(myWindow):
         self.right_indicator = self.page_2.right_indicator.arrows
         
     
-    def keyPressEvent(self, event: QKeyEvent) -> None:
-
-        key = event.key()
-
-        if key == Qt.Key_Up: self.keys["up"] = True
-        if key == Qt.Key_Down: self.keys["down"] = True
-        if key == Qt.Key_Left: self.keys["left"] = True
-        if key == Qt.Key_Right: self.keys["right"] = True
-        if key == Qt.Key_A: self.keys["a"] = True
-        if key == Qt.Key_D: self.keys["d"] = True
-        
-        #self.backend.write_read("55555")
-        
-        self.backend.move_plane_with_keys(
-            self.keys["up"],
-            self.keys["down"],
-            self.keys["left"],
-            self.keys["right"],
-            self.keys["a"],
-            self.keys["d"]
-        )
-
-        return super().keyPressEvent(event)   
-    def keyReleaseEvent(self, event: QKeyEvent) -> None:
-        
-        key = event.key()
-
-        if key == Qt.Key_Up: self.keys["up"] = False
-        if key == Qt.Key_Down: self.keys["down"] = False
-        if key == Qt.Key_Left: self.keys["left"] = False
-        if key == Qt.Key_Right: self.keys["right"] = False
-        if key == Qt.Key_A: self.keys["a"] = False
-        if key == Qt.Key_D: self.keys["d"] = False
-        
-        self.backend.move_plane_with_keys(
-            self.keys["up"],
-            self.keys["down"],
-            self.keys["left"],
-            self.keys["right"],
-            self.keys["a"],
-            self.keys["d"]
-        )
-        return super().keyReleaseEvent(event)       
     def move_left_indicator(self, new_pos: float, duration: int) -> None:
         self.page_2.left_indicator.arrows.move(
             new_pos, 0, 0, duration
@@ -176,7 +133,7 @@ class menu_bar(myFrame):
     def item_clicked(self, index):
         
         if self.ports_menu.currentText() != "No sensors connected...":
-            self.backend.serial_reader.newPort(self.ports_menu.currentText()[:4])
+            self.backend.serial_reader.newPort(self.ports_menu.currentText()[:5])
   
 class page_1(myFrame):
     

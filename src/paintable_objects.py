@@ -277,8 +277,8 @@ class Plane(QPixmap, Paintable_object):
         
         # Draw the pixmap representing the plane
         painter.drawPixmap(
-            - self.x_offset, 
-            - self.y_offset, 
+            int(round(- self.x_offset,0)), 
+            int(round(- self.y_offset,0)), 
             self
         )    
 class Target_box(Paintable_object):
@@ -359,16 +359,16 @@ class Target_box(Paintable_object):
         )
         
         painter.drawLine(
-            0 - self.x_offset,
-            self.height() / 2 - self.y_offset,
-            self.width() - self.x_offset,
-            self.height() / 2 - self.y_offset
+            int(round(0 - self.x_offset,0)),
+            int(round(self.height() / 2 - self.y_offset,0)),
+            int(round(self.width() - self.x_offset,0)),
+            int(round(self.height() / 2 - self.y_offset,0))
         )
         painter.drawLine(
-            self.width() / 2 + self.x_offset,
-            0 + self.y_offset,
-            self.width() / 2 + self.x_offset,
-            self.height() + self.y_offset
+            int(round(self.width() / 2 + self.x_offset,0)),
+            int(round(0 + self.y_offset,0)),
+            int(round(self.width() / 2 + self.x_offset,0)),
+            int(round(self.height() + self.y_offset,0))
         )
             
     def set_color(self, 
@@ -532,8 +532,8 @@ class Indicator_Target_Box(Paintable_object):
         # Draw a black line through the center of the target box
         painter.setPen(Qt.black) 
         painter.drawLine(
-            0, self.height() // 2,
-            self.width(), self.height() // 2
+            0, int(round(self.height() // 2,0)),
+            int(round(self.width(),0)), int(round(self.height() // 2,0))
         )
 
     def set_partner(self, partner):
