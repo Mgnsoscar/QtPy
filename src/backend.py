@@ -79,10 +79,13 @@ class Backend:
         self.checkmarks["game_duration"] += 1
         
         if duration == 10:
+            self.frontend.page_2.center_frame.show_tutorial = False
             self.start_timestamp = perf_counter()
+            
         
         if duration < 10:
             self.text.set_text(f"Game starting in {10 - duration}")
+            self.frontend.page_2.center_frame.show_tutorial = True
         elif duration < 20:
             self.text.move(0, 1, 0, 1000)
             self.text.set_text(f"Targets moving in {20 - duration}")

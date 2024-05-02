@@ -5,7 +5,7 @@ from PyQt5.QtGui import (
     QColor, QVector3D, QLinearGradient, QFont
 )
 from PyQt5.QtCore import (
-    QRectF, QPoint, QPointF, 
+    QRectF, QPoint, QPointF, QRect, 
     QVariantAnimation, QEasingCurve, Qt
 )
 import numpy as np
@@ -757,3 +757,30 @@ class game_text(Paintable_object):
             rect_height - (rect_height - text_height) - 2, 
             self.display_text
         )   
+class TextBox(Paintable_object):
+    def __init__(self, parent, text, color=QColor(0, 0, 0, 70), rotation_angle=0):
+        Paintable_object.__init__(self)
+        self.text = text
+        self.color = color
+        self.rotation_angle = rotation_angle
+        self.parent = parent
+
+    def draw(self, painter):
+      
+        #painter.setRenderHint(QPainter.Antialiasing)
+        #painter.translate(self.parent.width()//2, self.parent.height()//2)
+
+        transform = QTransform()
+        painter.setTransform(transform)
+        # Set color and font for the text box
+        painter.setBrush(self.color)
+        painter.setFont(QFont("Arial", 16))  # Adjust font style and size as needed
+
+        # Calculate the size of the text to determine the rectangle size
+        rect = QRect(0, 0, self.parent.width(), self.parent.height())
+        #rect.moveCenter(QPoint(0, 0))
+
+        # Draw the rectangle
+        painter.drawRect(rect)
+        painter.setPen(QColor(255, 255, 255))  # Set text color, white here
+        painter.drawText(rect, Qt.AlignCenter, self.text)

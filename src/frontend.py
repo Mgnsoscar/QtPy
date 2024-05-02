@@ -4,7 +4,7 @@ from QtPy import myFrame, myWindow, myDropdownMenu, myStack, myButton, myLabel
 from PyQt5.QtWidgets import QSizePolicy, QListWidget, QListWidgetItem, QLabel, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, QLineEdit, QMessageBox
 from PyQt5.QtGui import QKeyEvent, QPaintEvent, QPainter, QColor, QResizeEvent, QTransform
 from PyQt5.QtCore import QRectF, Qt, QPoint
-from paintable_objects import Plane, Target_box, Indicator_Target_Box, Indicator_Arrows, game_text
+from paintable_objects import Plane, Target_box, Indicator_Target_Box, Indicator_Arrows, game_text, TextBox
 from database import DatabaseHandler
 
 
@@ -335,7 +335,8 @@ class middle_frame(myFrame):
     plane_rotation: int
     max_target_box_difference: float
     def __init__(self, parent: page_2) -> None:
-            
+        
+        self.show_tutorial = True
 
         self.target_box_color = QColor(0, 255, 0, 200)
         
@@ -358,6 +359,16 @@ class middle_frame(myFrame):
 
         # Create the target box
         self.target_box = Target_box(self, self.plane)
+        
+        tutorial_text = (
+            "HOW TO PLAY:\n\nLower the plane by PUSHING DOWN\nthe right and left sensor.\n\n"
+            "Raise the plane by PULLING\nthe right and left sensor.\n\n"
+            "The goal is to keep the plane aligned within the target box as stable as possible."
+            "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        )
+        # Create the tutorial
+        self.tutorial = TextBox(self, tutorial_text)
+        
 
     def resizeEvent(self, event: QResizeEvent):
         """Makes sure the middle frame always fits the plane.
@@ -376,6 +387,9 @@ class middle_frame(myFrame):
         self.target_box.draw(painter)
         self.plane.draw(painter)
         self.text.draw(painter)
+        
+        if self.show_tutorial:
+            self.tutorial.draw(painter)
 
 class UserListWidget(QWidget):
     def __init__(self, parent: myFrame, top_level: Frontend):
